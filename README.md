@@ -3,14 +3,13 @@
 
 The Decorators library is a powerful tool for C# developers that allows you to add additional behavior to your classes and methods using attributes. This library uses the decorator pattern to wrap your classes and methods with additional functionality without modifying their implementation.
 
+The Decorate attribute can be used to intercept a method call, and add behavior before and/or after the actual call. This is done without modifying the original method code.
 
 ## Features
 
 - DecorateAttribute: This attribute can be applied to classes or methods. It takes a Type parameter that represents the decorator behavior to be applied.
-- DecorateIgnoreAttribute: This attribute can be applied to methods. It allows you to ignore certain decorators for specific methods.
-- Decorator<TDecorated>: This class uses the DispatchProxy to create a proxy of the decorated class and apply the decorator behavior.
 - IDecoratorBehavior: This interface defines the decorator behavior. You can implement this interface to create your own custom decorators.
-- Memoize: This is an example of a decorator behavior that caches the result of a method call to improve performance for repeated calls with the same parameters.
+- DecorateIgnoreAttribute: This attribute can be applied to methods. It allows you to ignore certain class decorators for specific methods.
 - ServiceCollectionExtensions: This class provides extension methods for IServiceCollection to easily add decorators to your services in an ASP.NET Core application.
 
 
@@ -26,20 +25,64 @@ public class MyDecoratorBehavior : IDecoratorBehavior
     {
         // Add your decorator behavior here
         		
-		// do things before the method call
+        // do things before the method call
 		
-		var result = targetMethod.Invoke(decorated, args);
+        //delegate the call
+        var result = targetMethod.Invoke(decorated, args);
 		
-		//do things after the method call
+        //do things after the method call
     }
 }
+```
 
+```csharp
 // Apply the decorator to a class or method 
-// behavior is applied in the same order as decorators are assigned to the class
 [Decorate(typeof(MyDecoratorBehavior))]
-[Decorate(typeof(FooDecoratorBehavior))]
-[Decorate(typeof(BarDecoratorBehavior))]
-[Decorate(typeof(FooDecoratorBehavior), "myDecoratorName")]
+public class MyClass
+{
+    //MyDecoratorBehavior wraps this method
+    public void MyMethod()
+    {
+        // Your method implementation
+    }
+
+    [Decorate(typeof(FooDecoratorBehavior))]
+    //both MyDecoratorBehavior and FooDecoratorBehavior wrap this method 
+    public void MyOtherMethod()
+    {
+        // Your method implementation
+    }
+}
+```
+
+```csharp
+// Decorators are nested in the order they are declared.
+[Decorate(typeof(FooBehavior))]
+[Decorate(typeof(FooBehavior))]
+[Decorate(typeof(BarBehavior))]
+public class MyClass
+{
+    //client -> foo -> foo -> bar -> MyMethod
+    public void MyMethod()
+    {
+        // Your method implementation
+    }
+
+    [Decorate(typeof(LogBehavior))]
+    [Decorate(typeof(CacheBehavior))]
+    //client -> foo -> foo -> bar -> log -> cache -> MyOtherMethod
+    public void MyOtherMethod()
+    {
+        // Your method implementation
+    }
+}
+```
+
+```csharp
+//you can ignore class decorators
+[Decorate(typeof(FooBehavior))]
+[Decorate(typeof(BarBehavior))]
+[Decorate(typeof(BarBehavior), "barName")]
 public class MyClass
 {
     //all class decorators apply
@@ -48,47 +91,47 @@ public class MyClass
         // Your method implementation
     }
 
-    [Decorate(typeof(MyMethodSpecificDecoratorBehavior))] //apply all class decorators plus this
-    public void MySecondMethod()
-    {
-        // Your method implementation
-    }
-
-    [DecorateIgnore(typeof(FooDecoratorBehavior))] //ignore all class decorators of type FooDecoratorBehavior
-    [Decorate(typeof(MyMethodSpecificDecoratorBehavior))] //apply all (not ignored) class decorators plus this
-    public void MyThirdMethod()
-    {
-        // Your method implementation
-    }
-
-    [DecorateIgnore(typeof(FooDecoratorBehavior), "myDecoratorName")] //ignore only the class decorator named "myDecoratorName"
+    [DecorateIgnore] //ignore all class decorators (foo, bar, bar)
+    [Decorate(typeof(LogBehavior))]
+    //only log applies
     public void MyOtherMethod()
     {
         // Your method implementation
     }
 
-    [DecorateIgnore] //ignore all class decorators
+    [DecorateIgnore(typeof(BarBehavior))] //ignore all class bar decorators
+    [Decorate(typeof(LogBehavior))]
+    //foo and log apply
+    public void MyThirdMethod()
+    {
+        // Your method implementation
+    }
+
+    [DecorateIgnore("barName")] //ignore named decorator "barName"
+    //foo and bar apply
     public void MyLastMethod()
     {
         // Your method implementation
     }
 }
+```
 
-// In your Startup.cs file
+```csharp
+// To enable the attributes you need to add MyClass as a service to the service collection
+// and then call services.UseDecorators method. MyClass must be added behind an interface.
 public void ConfigureServices(IServiceCollection services)
 {
+    services.AddScoped<IMyClass, MyClass>();
     services.UseDecorators();
 }
 ```
-
-In this example, MyDecoratorBehavior will be applied to all methods in MyClass. You can also apply the decorator to specific methods or ignore certain decorators using the DecorateAttribute and DecorateIgnoreAttribute respectively.
 
 Please note that the Decorators library uses reflection and should be used judiciously considering its impact on performance.
 
 
 ## Example of custom decorator behavior
 
-Here is an example of how to extend the Decorators library:
+To extend the library, simply implement IDecoratorBehavior, and use the new class with the decorate attribute:
 
 ```csharp
 public class Memoize : IDecoratorBehavior
@@ -96,7 +139,7 @@ public class Memoize : IDecoratorBehavior
     private ILogger<Memoize> _logger;
     private readonly ConcurrentDictionary<string, object?> _cache = new();
 
-    //inject services to your constructor
+    //you can inject services to your constructor
     public Memoize(ILogger<Memoize> logger)
     {
         _logger = logger;
