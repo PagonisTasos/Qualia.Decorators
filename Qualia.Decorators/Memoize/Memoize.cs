@@ -18,19 +18,10 @@ namespace Qualia.Decorators
 
         public object? Invoke<TDecorated>(TDecorated decorated, MethodInfo targetMethod, object?[]? args)
         {
-            try
-            {
-                var key = GenerateCacheKey(targetMethod, args);
-                var result = _cache.GetOrAdd(key, _ => targetMethod.Invoke(decorated, args));
+            var key = GenerateCacheKey(targetMethod, args);
+            var result = _cache.GetOrAdd(key, _ => targetMethod.Invoke(decorated, args));
 
-                return result;
-            }
-            catch (TargetInvocationException ex)
-            {
-                _logger?.LogError(ex.InnerException ?? ex,
-                    "Error during invocation of {decoratedClass}.{methodName}", typeof(TDecorated), targetMethod?.Name);
-                throw ex.InnerException ?? ex;
-            }
+            return result;
         }
 
         public static string GenerateCacheKey(MethodInfo targetMethod, object?[]? args)

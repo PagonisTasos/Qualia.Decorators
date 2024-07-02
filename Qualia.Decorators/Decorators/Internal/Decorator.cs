@@ -41,8 +41,15 @@ namespace Qualia.Decorators
                 }
             }
 
-            //is a method decor and we are calling this method
-            return _decoratorBehavior?.Invoke(_decorated, targetMethod, args);
+            try
+            {
+                //is a method decor and we are calling this method
+                return _decoratorBehavior?.Invoke(_decorated, targetMethod, args);
+            }
+            catch (TargetInvocationException ex)
+            {
+                throw new TargetInvocationException($"Error during invocation of {typeof(TDecorated)}.{targetMethod?.Name}", ex.InnerException ?? ex);
+            }
         }
 
         public static TDecorated Create(TDecorated decorated, IDecoratorBehavior decoratorBehavior, string? decoratorName = null, string? methodName = null)
