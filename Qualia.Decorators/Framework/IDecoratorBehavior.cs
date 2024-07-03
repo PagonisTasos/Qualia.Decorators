@@ -1,6 +1,6 @@
 ﻿using System.Reflection;
 
-namespace Qualia.Decorators
+namespace Qualia.Decorators.Framework
 {
     public interface IDecoratorBehavior
     {

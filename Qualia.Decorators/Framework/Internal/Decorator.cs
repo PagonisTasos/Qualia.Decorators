@@ -1,6 +1,6 @@
 ﻿using System.Reflection;
 
-namespace Qualia.Decorators
+namespace Qualia.Decorators.Framework
 {
     internal class Decorator<TDecorated> : DispatchProxy
     {

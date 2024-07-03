@@ -1,4 +1,4 @@
-﻿namespace Qualia.Decorators
+﻿namespace Qualia.Decorators.Framework
 {
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
     public class DecorateIgnoreAttribute(Type? decoratorBehavior = null, string? name = null) : Attribute

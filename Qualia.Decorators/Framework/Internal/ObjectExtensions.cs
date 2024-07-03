@@ -1,4 +1,4 @@
-﻿namespace Qualia.Decorators
+﻿namespace Qualia.Decorators.Framework
 {
     internal static class ObjectExtensions
     {

@@ -1,7 +1,7 @@
 ﻿using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Qualia.Decorators
+namespace Qualia.Decorators.Framework
 {
     public static class ServiceCollectionExtensions
     {
