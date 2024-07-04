@@ -37,22 +37,22 @@ namespace Qualia.Decorators.Framework
             if (descriptor.ImplementationType == null) return services;
 
             var classDecoratorBehaviors = descriptor.ImplementationType.GetCustomAttributes<DecorateAttribute>()
-                                            .Select(d => new NamedDecor { MethodName = null, DecoratorBehavior = d.DecoratorBehavior, DecoratorName = d.Name }).ToList();
+                                            .Select(d => new NamedDecor { MethodName = null, DecorateAttribute = d }).ToList();
 
             var methodDecoratorBehaviors = descriptor.ImplementationType.GetMethods().SelectMany(m => 
                                             m.GetCustomAttributes<DecorateAttribute>()
-                                            .Select(d => new NamedDecor { MethodName = m.Name, DecoratorBehavior = d.DecoratorBehavior, DecoratorName = d.Name })).ToList();
+                                            .Select(d => new NamedDecor { MethodName = m.Name, DecorateAttribute = d })).ToList();
 
             var namedDecoratorBehaviors = classDecoratorBehaviors.Concat(methodDecoratorBehaviors);
 
             foreach (var namedDecoratorBehavior in namedDecoratorBehaviors.Reverse())
             {
-                if (namedDecoratorBehavior.DecoratorBehavior == null) continue;
+                if (namedDecoratorBehavior.DecorateAttribute?.DecoratorBehavior == null) continue;
 
                 // If not registered, add the service
-                if (!services.Any(descriptor => descriptor.ServiceType == namedDecoratorBehavior.DecoratorBehavior))
+                if (!services.Any(descriptor => descriptor.ServiceType == namedDecoratorBehavior.DecorateAttribute.DecoratorBehavior))
                 {
-                    services.AddTransient(namedDecoratorBehavior.DecoratorBehavior);
+                    services.AddTransient(namedDecoratorBehavior.DecorateAttribute.DecoratorBehavior);
                 }
             }
 
@@ -65,12 +65,15 @@ namespace Qualia.Decorators.Framework
 
                 foreach (var namedDecoratorBehavior in namedDecoratorBehaviors.Reverse())
                 {
-                    if (namedDecoratorBehavior.DecoratorBehavior == null) continue;
+                    if (namedDecoratorBehavior.DecorateAttribute?.DecoratorBehavior == null) continue;
+
+                    var behavior = sp.GetRequiredService(namedDecoratorBehavior.DecorateAttribute.DecoratorBehavior).EnsureCast<IDecoratorBehavior>();
+                    behavior.AssociatedDecorateAttribute = namedDecoratorBehavior.DecorateAttribute;
 
                     decoratedInstance = Decorator<TInterface>.Create(
                         decorated: decoratedInstance,
-                        decoratorBehavior: sp.GetRequiredService(namedDecoratorBehavior.DecoratorBehavior).EnsureCast<IDecoratorBehavior>(),
-                        decoratorName: namedDecoratorBehavior.DecoratorName,
+                        decoratorBehavior: behavior,
+                        decoratorName: namedDecoratorBehavior.DecorateAttribute.Name,
                         methodName: namedDecoratorBehavior.MethodName
                         );
                 }
@@ -115,8 +118,7 @@ namespace Qualia.Decorators.Framework
         private class NamedDecor
         {
             public string? MethodName { get; set; }
-            public string? DecoratorName { get; set; }
-            public Type? DecoratorBehavior { get; set; }
+            public DecorateAttribute? DecorateAttribute { get; set; }
         }
 
     }

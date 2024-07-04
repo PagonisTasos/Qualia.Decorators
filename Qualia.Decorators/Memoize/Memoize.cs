@@ -13,6 +13,8 @@ namespace Qualia.Decorators
 
     public class Memoize : IDecoratorBehavior
     {
+        public DecorateAttribute? AssociatedDecorateAttribute { get; set; }
+
         private ILogger<Memoize> _logger;
         private readonly ConcurrentDictionary<string, object?> _cache = new();
 

@@ -13,6 +13,8 @@ namespace Qualia.Decorators
 
     public class MemCache : IDecoratorBehavior
     {
+        public DecorateAttribute? AssociatedDecorateAttribute { get; set; }
+
         private ILogger<Memoize> _logger;
         private readonly IMemoryCache _cache;
         //private readonly TimeSpan _timeout = TimeSpan.FromMinutes(10);//inject?
