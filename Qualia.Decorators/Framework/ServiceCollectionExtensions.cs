@@ -97,9 +97,20 @@ namespace Qualia.Decorators.Framework
             return ActivatorUtilities.GetServiceOrCreateInstance(services, type);
         }
 
-        private static bool HasDecorator(ServiceDescriptor descriptor) => HasDecorator(descriptor.ImplementationType ?? descriptor.ServiceType);
+        private static bool HasDecorator(ServiceDescriptor descriptor) 
+            => HasDecorator(descriptor.ImplementationType ?? descriptor.ServiceType);
+
         private static bool HasDecorator(Type type) 
-            => Attribute.IsDefined(type, typeof(DecorateAttribute)) || type.GetMethods().Any(m => Attribute.IsDefined(m, typeof(DecorateAttribute)));
+            => HasTypeDecorator(type) || HasMethodDecorator(type);
+
+        private static bool HasTypeDecorator(Type type) 
+            => type.GetCustomAttributes(true).Any(IsDecorateAttributeOrDerivedFromIt);
+
+        private static bool HasMethodDecorator(Type type) 
+            => type.GetMethods().Any(m => m.GetCustomAttributes(true).Any(IsDecorateAttributeOrDerivedFromIt));
+
+        private static bool IsDecorateAttributeOrDerivedFromIt(object o)
+            => typeof(DecorateAttribute).IsAssignableFrom(o.GetType());
 
         private class NamedDecor
         {

@@ -6,6 +6,11 @@ using Qualia.Decorators.Framework;
 
 namespace Qualia.Decorators
 {
+    public class MemCacheAttribute : DecorateAttribute
+    {
+        public MemCacheAttribute(string? name = null) : base(typeof(Memoize), name) { }
+    }
+
     public class MemCache : IDecoratorBehavior
     {
         private ILogger<Memoize> _logger;
