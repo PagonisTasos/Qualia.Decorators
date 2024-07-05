@@ -40,7 +40,7 @@ namespace Qualia.Decorators
         {
             _ = _memCacheAttribute?.Expiration switch
             {
-                MemCacheAttribute.ExpirationType.Absolut => entry.AbsoluteExpirationRelativeToNow = _memCacheAttribute?.TimeSpan,
+                MemCacheAttribute.ExpirationType.Absolute => entry.AbsoluteExpirationRelativeToNow = _memCacheAttribute?.TimeSpan,
                 MemCacheAttribute.ExpirationType.Sliding => entry.SlidingExpiration = _memCacheAttribute?.TimeSpan,
                 _ => throw new UnreachableException(),
             };
