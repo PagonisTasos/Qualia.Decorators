@@ -4,7 +4,7 @@ namespace Qualia.Decorators.Framework
 {
     public interface IDecoratorBehavior
     {
-        public DecorateAttribute? AssociatedDecorateAttribute { get; set; }
+        public void AssignAssociatedDecorateAttribute(DecorateAttribute decorateAttribute);
         public object? Invoke<TDecorated>(TDecorated decorated, MethodInfo targetMethod, object?[]? args);
     }
 }

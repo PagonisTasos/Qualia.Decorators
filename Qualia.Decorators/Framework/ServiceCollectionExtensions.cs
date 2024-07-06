@@ -68,7 +68,7 @@ namespace Qualia.Decorators.Framework
                     if (namedDecoratorBehavior.DecorateAttribute?.DecoratorBehavior == null) continue;
 
                     var behavior = sp.GetRequiredService(namedDecoratorBehavior.DecorateAttribute.DecoratorBehavior).EnsureCast<IDecoratorBehavior>();
-                    behavior.AssociatedDecorateAttribute = namedDecoratorBehavior.DecorateAttribute;
+                    behavior.AssignAssociatedDecorateAttribute(namedDecoratorBehavior.DecorateAttribute);
 
                     decoratedInstance = Decorator<TInterface>.Create(
                         decorated: decoratedInstance,

@@ -7,10 +7,8 @@ using Qualia.Decorators.Framework;
 namespace Qualia.Decorators
 {
 
-    public class Memoize : IDecoratorBehavior
+    public class Memoize : DecoratorBehavior<MemoizeAttribute>
     {
-        public DecorateAttribute? AssociatedDecorateAttribute { get; set; }
-
         private ILogger<Memoize> _logger;
         private readonly ConcurrentDictionary<string, object?> _cache = new();
 
@@ -19,7 +17,7 @@ namespace Qualia.Decorators
             _logger = logger;
         }
 
-        public object? Invoke<TDecorated>(TDecorated decorated, MethodInfo targetMethod, object?[]? args)
+        public override object? Invoke<TDecorated>(TDecorated decorated, MethodInfo targetMethod, object?[]? args)
         {
             var key = KeyGenerator.CreateKey(targetMethod, args);
             var result = _cache.GetOrAdd(key, _ => targetMethod.Invoke(decorated, args));
