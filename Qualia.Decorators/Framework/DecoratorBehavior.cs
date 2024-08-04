@@ -21,6 +21,10 @@ namespace Qualia.Decorators.Framework
         private DecorateAttribute? _associatedDecorateAttribute { get; set; }
         protected TAttribute? AssociatedAttribute => _associatedDecorateAttribute as TAttribute;
 
+        private static MethodInfo _invokeAsync = typeof(DecoratorBehaviorAsync<TAttribute>)
+                                            .GetMethods()
+                                            .First(m => m.Name == nameof(InvokeAsync) && m.ContainsGenericParameters);
+
         public void AssignAssociatedDecorateAttribute(DecorateAttribute decorateAttribute)
         {
             _associatedDecorateAttribute = decorateAttribute;
@@ -31,12 +35,7 @@ namespace Qualia.Decorators.Framework
             if (!typeof(Task).IsAssignableFrom(targetMethod.ReturnType))
                 throw new InvalidOperationException($"{this.GetType().Name} behavior cannot run on synchronous methods.");
 
-            var invokeAsync = 
-                typeof(DecoratorBehaviorAsync<TAttribute>)
-                .GetMethods()
-                .First(m => m.Name == nameof(InvokeAsync) && m.ContainsGenericParameters);
-
-            return invokeAsync
+            return _invokeAsync
                     .MakeGenericMethod(typeof(TDecorated), targetMethod.ReturnType.GenericTypeArguments[0])
                     .Invoke(this, [decorated, targetMethod, args]);
         }
