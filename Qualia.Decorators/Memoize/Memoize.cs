@@ -17,10 +17,10 @@ namespace Qualia.Decorators
             _logger = logger;
         }
 
-        public override object? Invoke<TDecorated>(TDecorated decorated, MethodInfo targetMethod, object?[]? args)
+        public override object? Invoke<TDecorated>(DecoratorContext<TDecorated> context)
         {
-            var key = KeyGenerator.CreateKey(targetMethod, args);
-            var result = _cache.GetOrAdd(key, _ => targetMethod.Invoke(decorated, args));
+            var key = KeyGenerator.CreateKey(context.TargetMethod, context.Args);
+            var result = _cache.GetOrAdd(key, _ => context.Next());
 
             return result;
         }

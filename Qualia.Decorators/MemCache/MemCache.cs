@@ -18,14 +18,14 @@ namespace Qualia.Decorators
             _cache = cache;
         }
 
-        public override object? Invoke<TDecorated>(TDecorated decorated, MethodInfo targetMethod, object?[]? args)
+        public override object? Invoke<TDecorated>(DecoratorContext<TDecorated> context)
         {
-            var key = KeyGenerator.CreateKey(targetMethod, args);
+            var key = KeyGenerator.CreateKey(context.TargetMethod, context.Args);
             var result = _cache.GetOrCreate(key, entry => 
             {
                 ConfigureExpiration(ref entry);
 
-                return targetMethod.Invoke(decorated, args); 
+                return context.Next(); 
             });
 
             return result;

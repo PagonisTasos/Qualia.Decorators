@@ -44,7 +44,8 @@ namespace Qualia.Decorators.Framework
             try
             {
                 //is a method decor and we are calling this method
-                return _decoratorBehavior?.Invoke(_decorated, targetMethod, args);
+                var ctx = new DecoratorContext<TDecorated> { Decorated = _decorated, TargetMethod = targetMethod, Args = args };
+                return _decoratorBehavior?.Invoke(ctx);
             }
             catch (TargetInvocationException ex)
             {

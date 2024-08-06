@@ -10,15 +10,15 @@ namespace Qualia.Decorators
         private readonly ConcurrentDictionary<string, SemaphoreSlim> _locks = new();
         private readonly ConcurrentDictionary<string, int> _lockReferences = new();
 
-        public override async Task<TReturn> InvokeAsync<TDecorated, TReturn>(TDecorated decorated, MethodInfo targetMethod, object?[]? args)
+        public override async Task<TReturn> InvokeAsync<TDecorated, TReturn>(DecoratorContext<TDecorated> context)
         {
-            var lockingKey = $"{nameof(TDecorated)}_{targetMethod.Name}";
+            var lockingKey = $"{nameof(TDecorated)}_{context.TargetMethod.Name}";
 
             try
             {
                 await LockAsync(lockingKey);
 
-                return await (dynamic?)targetMethod.Invoke(decorated, args);
+                return await (dynamic?)context.Next();
             }
             finally
             {
