@@ -19,7 +19,7 @@ namespace Qualia.Decorators.Framework
         public object? Invoke<TDecorated>(DecoratorContext<TDecorated> context)
         {
             if (!typeof(Task).IsAssignableFrom(context.TargetMethod.ReturnType))
-                throw new InvalidOperationException($"{this.GetType().Name} behavior cannot run on synchronous methods.");
+                throw new InvalidOperationException($"{typeof(TDecorated).Name} behavior cannot run on synchronous methods.");
 
             return _invokeAsync
                     .MakeGenericMethod(typeof(TDecorated), context.TargetMethod.ReturnType.GenericTypeArguments[0])
