@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
-using System.Reflection;
 using Qualia.Decorators.Utils;
 using Qualia.Decorators.Framework;
 
@@ -20,7 +19,7 @@ namespace Qualia.Decorators
         public override object? Invoke<TDecorated>(DecoratorContext<TDecorated> context)
         {
             var key = KeyGenerator.CreateKey(context.TargetMethod, context.Args);
-            var result = _cache.GetOrAdd(key, _ => context.Next());
+            var result = _cache.GetOrAdd(key, _ => Next(context));
 
             return result;
         }

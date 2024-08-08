@@ -7,10 +7,5 @@ namespace Qualia.Decorators.Framework
         public required TDecorated Decorated { get; init; }
         public required MethodInfo TargetMethod { get; init; }
         public required object?[]? Args { get; init; }
-
-        public object? Next()
-        {
-            return TargetMethod.Invoke(Decorated, Args);
-        }
     }
 }

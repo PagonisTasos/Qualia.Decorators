@@ -18,7 +18,7 @@ namespace Qualia.Decorators
             {
                 await LockAsync(lockingKey);
 
-                return await (dynamic?)context.Next();
+                return await Next<TDecorated, TReturn>(context);
             }
             finally
             {

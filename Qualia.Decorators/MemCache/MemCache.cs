@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using System.Reflection;
 using Microsoft.Extensions.Caching.Memory;
 using Qualia.Decorators.Utils;
 using Qualia.Decorators.Framework;
@@ -25,7 +24,7 @@ namespace Qualia.Decorators
             {
                 ConfigureExpiration(ref entry);
 
-                return context.Next(); 
+                return Next(context); 
             });
 
             return result;
