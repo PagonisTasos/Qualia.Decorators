@@ -2,20 +2,8 @@
 
 namespace Qualia.Decorators.Framework
 {
-    public abstract class DecoratorBehaviorAsync<TAttribute> : IDecoratorBehavior where TAttribute : DecorateAttribute
+    public abstract class DecoratorBehaviorAsync: IDecoratorBehavior
     {
-        private DecorateAttribute? _associatedDecorateAttribute { get; set; }
-        protected TAttribute? AssociatedAttribute => _associatedDecorateAttribute as TAttribute;
-
-        private static MethodInfo _invokeAsync = typeof(DecoratorBehaviorAsync<TAttribute>)
-                                            .GetMethods()
-                                            .First(m => m.Name == nameof(InvokeAsync) && m.ContainsGenericParameters);
-
-        public void AssignAssociatedDecorateAttribute(DecorateAttribute decorateAttribute)
-        {
-            _associatedDecorateAttribute = decorateAttribute;
-        }
-
         public object? Invoke<TDecorated>(DecoratorContext<TDecorated> context)
         {
             //to apply async behavior, the target method should be a Task.
@@ -53,5 +41,9 @@ namespace Qualia.Decorators.Framework
         }
 
         public abstract Task<TReturn> InvokeAsync<TDecorated, TReturn>(DecoratorContext<TDecorated> context);
+
+        private static MethodInfo _invokeAsync = typeof(DecoratorBehaviorAsync)
+                                            .GetMethods()
+                                            .First(m => m.Name == nameof(InvokeAsync) && m.ContainsGenericParameters);
     }
 }

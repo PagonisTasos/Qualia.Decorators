@@ -4,7 +4,7 @@ using System.Reflection;
 
 namespace Qualia.Decorators
 {
-    public class Lock : DecoratorBehaviorAsync<LockAttribute>
+    public class Lock : DecoratorBehaviorAsync
     {
         private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1);
         private readonly ConcurrentDictionary<string, SemaphoreSlim> _locks = new();

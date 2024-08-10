@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace Qualia.Decorators
 {
-    public class MemCache : DecoratorBehavior<MemCacheAttribute>
+    public class MemCache : DecoratorBehavior
     {
         private ILogger<MemCache> _logger;
         private readonly IMemoryCache _cache;
@@ -22,7 +22,7 @@ namespace Qualia.Decorators
             var key = KeyGenerator.CreateKey(context.TargetMethod, context.Args);
             var result = _cache.GetOrCreate(key, entry => 
             {
-                ConfigureExpiration(ref entry);
+                ConfigureExpiration(ref entry, context);
 
                 return Next(context); 
             });
@@ -30,12 +30,13 @@ namespace Qualia.Decorators
             return result;
         }
 
-        private void ConfigureExpiration(ref ICacheEntry entry)
+        private void ConfigureExpiration<TDecorated>(ref ICacheEntry entry, DecoratorContext<TDecorated> context)
         {
-            _ = AssociatedAttribute?.Expiration switch
+            var att = (context.AssociatedDecorateAttribute as MemCacheAttribute);
+            _ = att?.Expiration switch
             {
-                MemCacheAttribute.ExpirationType.Absolute => entry.AbsoluteExpirationRelativeToNow = AssociatedAttribute?.TimeSpan,
-                MemCacheAttribute.ExpirationType.Sliding => entry.SlidingExpiration = AssociatedAttribute?.TimeSpan,
+                MemCacheAttribute.ExpirationType.Absolute => entry.AbsoluteExpirationRelativeToNow = att?.TimeSpan,
+                MemCacheAttribute.ExpirationType.Sliding => entry.SlidingExpiration = att?.TimeSpan,
                 _ => throw new UnreachableException(),
             };
         }

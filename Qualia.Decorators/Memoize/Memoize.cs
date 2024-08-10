@@ -6,7 +6,7 @@ using Qualia.Decorators.Framework;
 namespace Qualia.Decorators
 {
 
-    public class Memoize : DecoratorBehavior<MemoizeAttribute>
+    public class Memoize : DecoratorBehavior
     {
         private ILogger<Memoize> _logger;
         private readonly ConcurrentDictionary<string, object?> _cache = new();

@@ -4,6 +4,7 @@ namespace Qualia.Decorators.Framework
 {
     internal class Decorator<TDecorated> : DispatchProxy
     {
+        private DecorateAttribute? _associatedAttribute;
         private TDecorated? _decorated;
         private IDecoratorBehavior? _decoratorBehavior;
         private string? _decoratorName;
@@ -44,7 +45,13 @@ namespace Qualia.Decorators.Framework
             try
             {
                 //is a method decor and we are calling this method
-                var ctx = new DecoratorContext<TDecorated> { Decorated = _decorated, TargetMethod = targetMethod, Args = args };
+                var ctx = new DecoratorContext<TDecorated> 
+                { 
+                    AssociatedDecorateAttribute = _associatedAttribute,
+                    Decorated = _decorated, 
+                    TargetMethod = targetMethod, 
+                    Args = args 
+                };
                 return _decoratorBehavior?.Invoke(ctx);
             }
             catch (TargetInvocationException ex)
@@ -53,18 +60,19 @@ namespace Qualia.Decorators.Framework
             }
         }
 
-        public static TDecorated Create(TDecorated decorated, IDecoratorBehavior decoratorBehavior, string? decoratorName = null, string? methodName = null)
+        public static TDecorated Create(DecorateAttribute attribute, TDecorated decorated, IDecoratorBehavior decoratorBehavior, string? methodName = null)
         {
             object proxy = Create<TDecorated, Decorator<TDecorated>>()
                             ?? throw new NullReferenceException("DispatchProxy for Decorator was null.");
 
-            ((Decorator<TDecorated>)proxy).SetParameters(decorated, decoratorBehavior, decoratorName, methodName);
+            ((Decorator<TDecorated>)proxy).SetParameters(attribute, decorated, decoratorBehavior, attribute.Name, methodName);
 
             return (TDecorated)proxy;
         }
 
-        private void SetParameters(TDecorated decorated, IDecoratorBehavior decoratorBehavior, string? decoratorName = null, string? methodName = null)
+        private void SetParameters(DecorateAttribute attribute, TDecorated decorated, IDecoratorBehavior decoratorBehavior, string? decoratorName = null, string? methodName = null)
         {
+            _associatedAttribute = attribute;
             _decorated = decorated ?? throw new ArgumentNullException(nameof(decorated));
             _decoratorBehavior = decoratorBehavior ?? throw new ArgumentNullException(nameof(decoratorBehavior));
             _decoratorName = decoratorName;
