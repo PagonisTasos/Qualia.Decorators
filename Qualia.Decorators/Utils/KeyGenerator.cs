@@ -7,16 +7,17 @@ namespace Qualia.Decorators.Utils
 {
     internal static class KeyGenerator
     {
-        public static string CreateKey(MethodInfo targetMethod, object?[]? args)
+        public static string CreateKey(MethodInfo targetMethod, object[] args)
         {
-            Span<byte> serializedArgs = JsonSerializer.SerializeToUtf8Bytes(args, options);
-            Span<byte> hashBytes = SHA1.HashData(serializedArgs);
-            Span<char> hex = ByteToHexBitFiddle(hashBytes);
+            byte[] serializedArgs = JsonSerializer.SerializeToUtf8Bytes(args, options);
+            SHA1 sha1 = SHA1.Create();
+            byte[] hashBytes = sha1.ComputeHash(serializedArgs);
+            char[] hex = ByteToHexBitFiddle(hashBytes);
 
-            return string.Concat(targetMethod.Name.AsSpan(), "_".AsSpan(), hex);
+            return string.Concat(targetMethod.Name, "_", hex);
         }
 
-        private static Span<char> ByteToHexBitFiddle(Span<byte> bytes)
+        private static char[] ByteToHexBitFiddle(byte[] bytes)
         {
             char[] c = new char[bytes.Length * 2];
             int b;
@@ -27,10 +28,10 @@ namespace Qualia.Decorators.Utils
                 b = bytes[i] & 0xF;
                 c[i * 2 + 1] = (char)(55 + b + (((b - 10) >> 31) & -7));
             }
-            return c.AsSpan();
+            return c;
         }
 
-        private static readonly JsonSerializerOptions options = new()
+        private static readonly JsonSerializerOptions options = new JsonSerializerOptions()
         {
             ReferenceHandler = ReferenceHandler.IgnoreCycles
         };

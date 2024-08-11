@@ -4,9 +4,17 @@ namespace Qualia.Decorators.Framework
 {
     public class DecoratorContext<TDecorated>
     {
-        public DecorateAttribute? AssociatedDecorateAttribute { get; init; }
-        public required TDecorated Decorated { get; init; }
-        public required MethodInfo TargetMethod { get; init; }
-        public required object?[]? Args { get; init; }
+        public DecoratorContext(DecorateAttribute associatedDecorateAttribute, TDecorated decorated, MethodInfo targetMethod, object[] args)
+        {
+            AssociatedDecorateAttribute = associatedDecorateAttribute;
+            Decorated = decorated;
+            TargetMethod = targetMethod;
+            Args = args;
+        }
+
+        public DecorateAttribute AssociatedDecorateAttribute { get; }
+        public TDecorated Decorated { get; }
+        public MethodInfo TargetMethod { get; }
+        public object[] Args { get; }
     }
 }

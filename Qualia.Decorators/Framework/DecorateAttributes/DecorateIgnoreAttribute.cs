@@ -1,9 +1,16 @@
-﻿namespace Qualia.Decorators.Framework
+﻿using System;
+
+namespace Qualia.Decorators.Framework
 {
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
-    public class DecorateIgnoreAttribute(Type? decoratorBehavior = null, string? name = null) : Attribute
+    public class DecorateIgnoreAttribute : Attribute
     {
-        public Type? DecoratorBehavior { get; } = decoratorBehavior;
-        public string? Name { get; } = name;
+        public DecorateIgnoreAttribute(Type decoratorBehavior = null, string name = null)
+        {
+            DecoratorBehavior = decoratorBehavior;
+            Name = name;
+        }
+        public Type DecoratorBehavior { get; }
+        public string Name { get; }
     }
 }

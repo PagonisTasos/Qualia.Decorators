@@ -1,4 +1,7 @@
-﻿using System.Reflection;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Qualia.Decorators.Framework
@@ -23,11 +26,11 @@ namespace Qualia.Decorators.Framework
 
             if (method == null) return services;
 
-            method.Invoke(null, [services, descriptor]);
+            method.Invoke(null, new object[] { services, descriptor });
             return services;
         }
 
-        private static MethodInfo? CreateTheGenericMethodForDecoratingDescriptor(ServiceDescriptor descriptor)
+        private static MethodInfo CreateTheGenericMethodForDecoratingDescriptor(ServiceDescriptor descriptor)
         {
             var decoratorType = typeof(Decorator<>).MakeGenericType(descriptor.ServiceType); //ex: Decorator<ICustomService>
             var method = typeof(ServiceCollectionExtensions)
@@ -79,7 +82,7 @@ namespace Qualia.Decorators.Framework
             sp =>
             {
                 //init with actual implementation type
-                TInterface? decoratedInstance = sp.CreateServiceInstance(serviceDescriptor).EnsureCast<TInterface>();
+                TInterface decoratedInstance = sp.CreateServiceInstance(serviceDescriptor).EnsureCast<TInterface>();
 
                 foreach (var namedDecoratorBehavior in decorateDescriptors)
                 {

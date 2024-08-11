@@ -1,10 +1,13 @@
-﻿using System.Reflection;
+﻿using System;
+using System.Linq;
+using System.Reflection;
+using System.Threading.Tasks;
 
 namespace Qualia.Decorators.Framework
 {
     public abstract class DecoratorBehaviorAsync: IDecoratorBehavior
     {
-        public object? Invoke<TDecorated>(DecoratorContext<TDecorated> context)
+        public object Invoke<TDecorated>(DecoratorContext<TDecorated> context)
         {
             //to apply async behavior, the target method should be a Task.
             //If that is not the case the client will run synchronously,
@@ -20,7 +23,7 @@ namespace Qualia.Decorators.Framework
 
             return _invokeAsync
                             .MakeGenericMethod(typeof(TDecorated), returnType)
-                            .Invoke(this, [context]);
+                            .Invoke(this, new object[] { context });
         }
 
         public async Task<TReturn> Next<TDecorated, TReturn>(DecoratorContext<TDecorated> context)
@@ -32,12 +35,12 @@ namespace Qualia.Decorators.Framework
             {
                 //in case of Task we cant return the result of type void, so we'll return null.
                 //the client does not wait for a result anyway.
-                await (dynamic?)context.TargetMethod.Invoke(context.Decorated, context.Args);
-                return default(TReturn)!;
+                await (dynamic)context.TargetMethod.Invoke(context.Decorated, context.Args);
+                return default(TReturn);
             }
 
             //object from Invoke is Task<T> here, so it is ok to await it and return the result.
-            return await (dynamic?)context.TargetMethod.Invoke(context.Decorated, context.Args);
+            return await (dynamic)context.TargetMethod.Invoke(context.Decorated, context.Args);
         }
 
         public abstract Task<TReturn> InvokeAsync<TDecorated, TReturn>(DecoratorContext<TDecorated> context);

@@ -3,6 +3,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Qualia.Decorators.Utils;
 using Qualia.Decorators.Framework;
 using System.Diagnostics;
+using System;
 
 namespace Qualia.Decorators
 {
@@ -17,7 +18,7 @@ namespace Qualia.Decorators
             _cache = cache;
         }
 
-        public override object? Invoke<TDecorated>(DecoratorContext<TDecorated> context)
+        public override object Invoke<TDecorated>(DecoratorContext<TDecorated> context)
         {
             var key = KeyGenerator.CreateKey(context.TargetMethod, context.Args);
             var result = _cache.GetOrCreate(key, entry => 
@@ -33,12 +34,13 @@ namespace Qualia.Decorators
         private void ConfigureExpiration<TDecorated>(ref ICacheEntry entry, DecoratorContext<TDecorated> context)
         {
             var att = (context.AssociatedDecorateAttribute as MemCacheAttribute);
-            _ = att?.Expiration switch
-            {
-                MemCacheAttribute.ExpirationType.Absolute => entry.AbsoluteExpirationRelativeToNow = att?.TimeSpan,
-                MemCacheAttribute.ExpirationType.Sliding => entry.SlidingExpiration = att?.TimeSpan,
-                _ => throw new UnreachableException(),
-            };
+
+            if (att?.Expiration == MemCacheAttribute.ExpirationType.Absolute)
+                entry.AbsoluteExpirationRelativeToNow = att?.TimeSpan;
+            if (att?.Expiration == MemCacheAttribute.ExpirationType.Sliding)
+                entry.SlidingExpiration = att?.TimeSpan;
+
+            throw new InvalidOperationException("MemCache decorator behavior failed while determining attribute's expiration type.");
         }
     }
 }

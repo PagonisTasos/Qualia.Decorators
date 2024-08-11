@@ -4,6 +4,6 @@ namespace Qualia.Decorators
 {
     public class MemoizeAttribute : DecorateAttribute
     {
-        public MemoizeAttribute(string? name = null) : base(typeof(Memoize), name) { }
+        public MemoizeAttribute(string name = null) : base(typeof(Memoize), name) { }
     }
 }

@@ -4,8 +4,8 @@
     {
         internal class DecorateDescriptor
         {
-            public string? MethodName { get; set; }
-            public DecorateAttribute? DecorateAttribute { get; set; }
+            public string MethodName { get; set; }
+            public DecorateAttribute DecorateAttribute { get; set; }
         }
 
     }

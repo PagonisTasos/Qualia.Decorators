@@ -1,14 +1,12 @@
-﻿using System.Security.AccessControl;
-
-namespace Qualia.Decorators.Framework
+﻿namespace Qualia.Decorators.Framework
 {
     public abstract class DecoratorBehavior : IDecoratorBehavior
     {
-        public object? Next<TDecorated>(DecoratorContext<TDecorated> context)
+        public object Next<TDecorated>(DecoratorContext<TDecorated> context)
         {
             return context.TargetMethod.Invoke(context.Decorated, context.Args);
         }
 
-        public abstract object? Invoke<TDecorated>(DecoratorContext<TDecorated> context);
+        public abstract object Invoke<TDecorated>(DecoratorContext<TDecorated> context);
     }
 }
