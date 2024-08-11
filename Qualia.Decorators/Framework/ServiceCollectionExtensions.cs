@@ -3,13 +3,13 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Qualia.Decorators.Framework
 {
-    public static class ServiceCollectionExtensions
+    public static partial class ServiceCollectionExtensions
     {
         public static IServiceCollection UseDecorators(this IServiceCollection services)
         {
-            var descriptorsWithDecorators = services.Where(HasDecorator).ToList();
+            var descriptorsWithDecorateAttribute = services.Where(DecorateAttributeFinder.HasDecorateAttribute).ToList();
 
-            foreach (var descriptor in descriptorsWithDecorators)
+            foreach (var descriptor in descriptorsWithDecorateAttribute)
             {
                 services.Decorate(descriptor);
             }
@@ -19,51 +19,69 @@ namespace Qualia.Decorators.Framework
 
         private static IServiceCollection Decorate(this IServiceCollection services, ServiceDescriptor descriptor)
         {
-            var decoratorType = typeof(Decorator<>).MakeGenericType(descriptor.ServiceType);
+            var method = CreateTheGenericMethodForDecoratingDescriptor(descriptor);
+
+            if (method == null) return services;
+
+            method.Invoke(null, [services, descriptor]);
+            return services;
+        }
+
+        private static MethodInfo? CreateTheGenericMethodForDecoratingDescriptor(ServiceDescriptor descriptor)
+        {
+            var decoratorType = typeof(Decorator<>).MakeGenericType(descriptor.ServiceType); //ex: Decorator<ICustomService>
             var method = typeof(ServiceCollectionExtensions)
                             .GetMethod(nameof(DecorateWithDispatchProxy), BindingFlags.NonPublic | BindingFlags.Static)
                             ?.MakeGenericMethod(descriptor.ServiceType, decoratorType);
 
-            if (method == null) return services;
-
-            method.Invoke(null, new object[] { services, descriptor });
-            return services;
+            //ex: method is DecorateWithDispatchProxy<ICustomService, Decorator<ICustomService>>(...)
+            return method;
         }
 
-        private static IServiceCollection DecorateWithDispatchProxy<TInterface, TProxy>(this IServiceCollection services, ServiceDescriptor descriptor)
+        private static IServiceCollection DecorateWithDispatchProxy<TInterface, TProxy>(this IServiceCollection services, ServiceDescriptor serviceDescriptor)
             where TInterface : class
             where TProxy : DispatchProxy
         {
-            if (descriptor.ImplementationType == null) return services;
+            var decorateDescriptors = DecorateDescriptorsExtractor.GetDecorateDescriptors(serviceDescriptor);
 
-            var classDecoratorBehaviors = descriptor.ImplementationType.GetCustomAttributes<DecorateAttribute>()
-                                            .Select(d => new NamedDecor { MethodName = null, DecorateAttribute = d }).ToList();
+            if (decorateDescriptors.Count == 0) return services;
 
-            var methodDecoratorBehaviors = descriptor.ImplementationType.GetMethods().SelectMany(m => 
-                                            m.GetCustomAttributes<DecorateAttribute>()
-                                            .Select(d => new NamedDecor { MethodName = m.Name, DecorateAttribute = d })).ToList();
+            RegisterTransientServicesDeclaredInDecorateDescriptors(services, decorateDescriptors);
 
-            var namedDecoratorBehaviors = classDecoratorBehaviors.Concat(methodDecoratorBehaviors);
+            ServiceDescriptor descorated = DecorateTheServiceDescriptor<TInterface>(serviceDescriptor, decorateDescriptors);
 
-            foreach (var namedDecoratorBehavior in namedDecoratorBehaviors.Reverse())
+            services.Remove(serviceDescriptor);
+            services.Add(descorated);
+
+            return services;
+        }
+
+        private static void RegisterTransientServicesDeclaredInDecorateDescriptors(IServiceCollection services, List<DecorateDescriptor> decorateDescriptors)
+        {
+            foreach (var decorateDescriptor in decorateDescriptors)
             {
-                if (namedDecoratorBehavior.DecorateAttribute?.DecoratorBehavior == null) continue;
+                if (decorateDescriptor.DecorateAttribute?.DecoratorBehavior == null) continue;
 
                 // If not registered, add the service
-                if (!services.Any(descriptor => descriptor.ServiceType == namedDecoratorBehavior.DecorateAttribute.DecoratorBehavior))
+                if (!services.Any(descriptor => descriptor.ServiceType == decorateDescriptor.DecorateAttribute.DecoratorBehavior))
                 {
-                    services.AddTransient(namedDecoratorBehavior.DecorateAttribute.DecoratorBehavior);
+                    services.AddTransient(decorateDescriptor.DecorateAttribute.DecoratorBehavior);
                 }
             }
+        }
 
-            ServiceDescriptor descorated = ServiceDescriptor.Describe(
-            descriptor.ServiceType,
+        private static ServiceDescriptor DecorateTheServiceDescriptor<TInterface>(
+            ServiceDescriptor serviceDescriptor, List<DecorateDescriptor> decorateDescriptors)
+            where TInterface : class
+        {
+            ServiceDescriptor decorated = ServiceDescriptor.Describe(
+            serviceDescriptor.ServiceType,
             sp =>
             {
                 //init with actual implementation type
-                TInterface? decoratedInstance = sp.CreateInstance(descriptor).EnsureCast<TInterface>();
+                TInterface? decoratedInstance = sp.CreateServiceInstance(serviceDescriptor).EnsureCast<TInterface>();
 
-                foreach (var namedDecoratorBehavior in namedDecoratorBehaviors.Reverse())
+                foreach (var namedDecoratorBehavior in decorateDescriptors)
                 {
                     if (namedDecoratorBehavior.DecorateAttribute?.DecoratorBehavior == null) continue;
 
@@ -79,15 +97,12 @@ namespace Qualia.Decorators.Framework
 
                 return decoratedInstance;
             },
-            descriptor.Lifetime);
+            serviceDescriptor.Lifetime);
 
-            services.Remove(descriptor);
-            services.Add(descorated);
-
-            return services;
+            return decorated;
         }
 
-        private static object CreateInstance(this IServiceProvider services, ServiceDescriptor descriptor)
+        private static object CreateServiceInstance(this IServiceProvider services, ServiceDescriptor descriptor)
         {
             if (descriptor.ImplementationInstance != null)
                 return descriptor.ImplementationInstance;
@@ -98,27 +113,5 @@ namespace Qualia.Decorators.Framework
             var type = descriptor.ImplementationType ?? throw new NullReferenceException("Service descriptor is missing ImplementationType.");
             return ActivatorUtilities.GetServiceOrCreateInstance(services, type);
         }
-
-        private static bool HasDecorator(ServiceDescriptor descriptor) 
-            => HasDecorator(descriptor.ImplementationType ?? descriptor.ServiceType);
-
-        private static bool HasDecorator(Type type) 
-            => HasTypeDecorator(type) || HasMethodDecorator(type);
-
-        private static bool HasTypeDecorator(Type type) 
-            => type.GetCustomAttributes(true).Any(IsDecorateAttributeOrDerivedFromIt);
-
-        private static bool HasMethodDecorator(Type type) 
-            => type.GetMethods().Any(m => m.GetCustomAttributes(true).Any(IsDecorateAttributeOrDerivedFromIt));
-
-        private static bool IsDecorateAttributeOrDerivedFromIt(object o)
-            => typeof(DecorateAttribute).IsAssignableFrom(o.GetType());
-
-        private class NamedDecor
-        {
-            public string? MethodName { get; set; }
-            public DecorateAttribute? DecorateAttribute { get; set; }
-        }
-
     }
 }
