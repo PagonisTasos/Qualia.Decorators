@@ -36,9 +36,15 @@ namespace Qualia.Decorators
             var att = (context.AssociatedDecorateAttribute as MemCacheAttribute);
 
             if (att?.Expiration == MemCacheAttribute.ExpirationType.Absolute)
+            {
                 entry.AbsoluteExpirationRelativeToNow = att?.TimeSpan;
+                return;
+            }
             if (att?.Expiration == MemCacheAttribute.ExpirationType.Sliding)
+            {
                 entry.SlidingExpiration = att?.TimeSpan;
+                return;
+            }
 
             throw new InvalidOperationException("MemCache decorator behavior failed while determining attribute's expiration type.");
         }
