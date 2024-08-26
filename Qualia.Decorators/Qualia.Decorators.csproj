@@ -7,13 +7,13 @@
 	  <PackageId>Qualia.Decorators</PackageId>
 	  <Title>Qualia.Decorators</Title>
 	  <Description>
-		  The Decorators library is a powerful tool for C# developers that allows you to add additional behavior to your classes and methods using attributes. This library uses the decorator pattern to wrap your classes and methods with additional functionality without modifying their implementation.
-		  The Decorate attribute can be used to intercept a method call, and add behavior before and/or after the actual call. This is done without modifying the original method code.
+		  The Decorators library is a powerful tool for C# developers that allows you to intercept methods and execute code before and after.
+		  The library uses attributes to mark the targeted methods and - behind the scenes - adds the desired behavior via decorator pattern, providing additional functionality without modifying the initial implementation.
 	  </Description>
 	  <PackageProjectUrl>https://github.com/PagonisTasos/Qualia.Decorators</PackageProjectUrl>
-	  <PackageTags>c# extensions, decorators, interseptors</PackageTags>
+	  <PackageTags>c# extensions, decorators, method interception</PackageTags>
 	  <RootNamespace>Qualia.Decorators</RootNamespace>
-	  <Version>0.2.1</Version>
+	  <Version>0.2.2</Version>
 	  <Authors>Pagonis Tasos</Authors>
 	  <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>

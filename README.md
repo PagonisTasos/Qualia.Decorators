@@ -1,54 +1,27 @@
 
 # Qualia.Decorators Library
 
-The Decorators library is a powerful tool for C# developers that allows you to add additional behavior to your classes and methods using attributes. This library uses the decorator pattern to wrap your classes and methods with additional functionality without modifying their implementation.
+The Decorators library is a powerful tool for C# developers that allows you to intercept methods and execute code before and after.
 
-The Decorate attribute can be used to intercept a method call, and add behavior before and/or after the actual call. This is done without modifying the original method code.
+The library uses attributes to mark the targeted methods and - behind the scenes - adds the desired behavior via decorator pattern, providing additional functionality without modifying the initial implementation.
 
 ## Features
 
-- DecorateAttribute: This attribute can be applied to classes or methods. It takes a Type parameter that represents the decorator behavior to be applied.
-- IDecoratorBehavior: This interface defines the decorator behavior. You can implement this interface to create your own custom decorators.
-- DecorateIgnoreAttribute: This attribute can be applied to methods. It allows you to ignore certain class decorators for specific methods.
-- ServiceCollectionExtensions: This class provides extension methods for IServiceCollection to easily add decorators to your services in an ASP.NET Core application.
+- Memoize: Cache a method result for the lifetime of the object containing it.
+- MemCache: Cache a method result.
+- Lock: Lock a method, to make it thread safe.
+- Open to extensions: Add your own attributes, using custom logic.
 
 
 ## Usage
 
-Here is an example of how to use the Decorators library:
 
 ```csharp
-// Define your decorator behavior
-public class MyDecoratorBehavior : IDecoratorBehavior
+//ex: Use Memoize on a method
+public class Foo
 {
-    public object? Invoke<TDecorated>(TDecorated decorated, MethodInfo targetMethod, object?[]? args)
-    {
-        // Add your decorator behavior here
-        		
-        // do things before the method call
-		
-        //delegate the call
-        var result = targetMethod.Invoke(decorated, args);
-		
-        //do things after the method call
-    }
-}
-```
-
-```csharp
-// Apply the decorator to a class or method 
-[Decorate(typeof(MyDecoratorBehavior))]
-public class MyClass
-{
-    //MyDecoratorBehavior wraps this method
-    public void MyMethod()
-    {
-        // Your method implementation
-    }
-
-    [Decorate(typeof(FooDecoratorBehavior))]
-    //both MyDecoratorBehavior and FooDecoratorBehavior wrap this method 
-    public void MyOtherMethod()
+    [Memoize]
+    public void Bar()
     {
         // Your method implementation
     }
@@ -56,72 +29,11 @@ public class MyClass
 ```
 
 ```csharp
-// Decorators are nested in the order they are declared.
-[Decorate(typeof(FooBehavior))]
-[Decorate(typeof(FooBehavior))]
-[Decorate(typeof(BarBehavior))]
-public class MyClass
-{
-    //client -> foo -> foo -> bar -> MyMethod
-    public void MyMethod()
-    {
-        // Your method implementation
-    }
-
-    [Decorate(typeof(LogBehavior))]
-    [Decorate(typeof(CacheBehavior))]
-    //client -> foo -> foo -> bar -> log -> cache -> MyOtherMethod
-    public void MyOtherMethod()
-    {
-        // Your method implementation
-    }
-}
-```
-
-```csharp
-//you can ignore class decorators
-[Decorate(typeof(FooBehavior))]
-[Decorate(typeof(BarBehavior))]
-[Decorate(typeof(BarBehavior), "barName")]
-public class MyClass
-{
-    //all class decorators apply
-    public void MyMethod()
-    {
-        // Your method implementation
-    }
-
-    [DecorateIgnore] //ignore all class decorators (foo, bar, bar)
-    [Decorate(typeof(LogBehavior))]
-    //only log applies
-    public void MyOtherMethod()
-    {
-        // Your method implementation
-    }
-
-    [DecorateIgnore(typeof(BarBehavior))] //ignore all class bar decorators
-    [Decorate(typeof(LogBehavior))]
-    //foo and log apply
-    public void MyThirdMethod()
-    {
-        // Your method implementation
-    }
-
-    [DecorateIgnore("barName")] //ignore named decorator "barName"
-    //foo and bar apply
-    public void MyLastMethod()
-    {
-        // Your method implementation
-    }
-}
-```
-
-```csharp
-// To enable the attributes you need to add MyClass as a service to the service collection
-// and then call services.UseDecorators method. MyClass must be added behind an interface.
+// To enable the attributes you need to add the targeted class as a service to the service collection
+// and then call services.UseDecorators method. The targeted class must be added behind an interface.
 public void ConfigureServices(IServiceCollection services)
 {
-    services.AddScoped<IMyClass, MyClass>();
+    services.AddScoped<IFoo, Foo>();
     services.UseDecorators();
 }
 ```
@@ -131,47 +43,123 @@ Please note that the Decorators library uses reflection and should be used judic
 
 ## Example of custom decorator behavior
 
-To extend the library, simply implement IDecoratorBehavior, and use the new class with the decorate attribute:
+
+To extend the library, simply implement DecoratorBehavior (or DecoratorBehaviorAsync), and create a corresponding attribute.
 
 ```csharp
-public class Memoize : IDecoratorBehavior
-{
-    private ILogger<Memoize> _logger;
-    private readonly ConcurrentDictionary<string, object?> _cache = new();
-
-    //you can inject services to your constructor
-    public Memoize(ILogger<Memoize> logger)
+    public class Memoize : DecoratorBehavior
     {
-        _logger = logger;
-    }
+        private readonly ConcurrentDictionary<string, object> _cache = new ConcurrentDictionary<string, object>();
 
-    public object? Invoke<TDecorated>(TDecorated decorated, MethodInfo targetMethod, object?[]? args)
-    {
-        try
+        public override object Invoke<TDecorated>(DecoratorContext<TDecorated> context)
         {
-            //get a hash of the target methods arguments to use as a cache key
-            var key = GenerateCacheKey(targetMethod, args);
-
-            //call the target method if key not in cache, and cache the key & result in memory
-            //or just return the result if the key is in the cache
-            var result = _cache.GetOrAdd(key, _ => targetMethod.Invoke(decorated, args));
+            var key = KeyGenerator.CreateKey(context.TargetMethod, context.Args);
+            var result = _cache.GetOrAdd(key, _ => Next(context));
 
             return result;
         }
-        catch (TargetInvocationException ex)
+    }
+
+    public class MemoizeAttribute : DecorateAttribute
+    {
+        public MemoizeAttribute(string name = null) : base(typeof(Memoize), name) { }
+    }
+
+```
+
+
+You can also inject services in your behaviors or use parameters for the attributes.
+
+```csharp
+    public class MemCache : DecoratorBehavior
+    {
+        private ILogger<MemCache> _logger;
+        private readonly IMemoryCache _cache;
+
+        public MemCache(ILogger<MemCache> logger, IMemoryCache cache)
         {
-            _logger?.LogError(ex.InnerException ?? ex,
-                "Error during invocation of {decoratedClass}.{methodName}", typeof(TDecorated), targetMethod?.Name);
-            throw ex.InnerException ?? ex;
+            _logger = logger;
+            _cache = cache;
+        }
+
+        public override object Invoke<TDecorated>(DecoratorContext<TDecorated> context)
+        {
+            var key = KeyGenerator.CreateKey(context.TargetMethod, context.Args);
+            var result = _cache.GetOrCreate(key, entry => 
+            {
+                ConfigureExpiration(ref entry, context);
+
+                return Next(context); 
+            });
+
+            return result;
+        }
+
+        private void ConfigureExpiration<TDecorated>(ref ICacheEntry entry, DecoratorContext<TDecorated> context)
+        {
+            var att = (context.AssociatedDecorateAttribute as MemCacheAttribute);
+
+            if (att?.Expiration == MemCacheAttribute.ExpirationType.Absolute)
+            {
+                entry.AbsoluteExpirationRelativeToNow = att?.TimeSpan;
+                return;
+            }
+            if (att?.Expiration == MemCacheAttribute.ExpirationType.Sliding)
+            {
+                entry.SlidingExpiration = att?.TimeSpan;
+                return;
+            }
+
+            throw new InvalidOperationException("MemCache decorator behavior failed while determining attribute's expiration type.");
         }
     }
 
-    private static string GenerateCacheKey(MethodInfo targetMethod, object?[]? args)
+    public class MemCacheAttribute : DecorateAttribute
     {
-        var serializedArgs = JsonSerializer.Serialize(args);
-        byte[] bytes = Encoding.UTF8.GetBytes(serializedArgs);
-        byte[] hashBytes = SHA1.HashData(bytes);
-        return $"{targetMethod.Name}_{BitConverter.ToString(hashBytes).Replace("-", "")}";
+        public TimeSpan? TimeSpan { get; set; }
+        public ExpirationType Expiration { get; set; }
+
+        public MemCacheAttribute(string name = null, string timespan = "1m", ExpirationType expiration = ExpirationType.Absolute) 
+            : base(typeof(MemCache), name) 
+        {
+            TimeSpan = StringToTimeSpan.Parse(timespan);
+            Expiration = expiration;
+        }
+
+        public enum ExpirationType { Absolute, Sliding }
     }
-}
+```
+
+
+Additionally, async behaviors can be implemented.
+
+```csharp
+    public class Lock : DecoratorBehaviorAsync
+    {
+        private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1);
+        private readonly ConcurrentDictionary<string, SemaphoreSlim> _locks = new ConcurrentDictionary<string, SemaphoreSlim>();
+        private readonly ConcurrentDictionary<string, int> _lockReferences = new ConcurrentDictionary<string, int>();
+
+        public override async Task<TReturn> InvokeAsync<TDecorated, TReturn>(DecoratorContext<TDecorated> context)
+        {
+            var lockingKey = $"{nameof(TDecorated)}_{context.TargetMethod.Name}";
+
+            try
+            {
+                await LockAsync(lockingKey);
+
+                return await Next<TDecorated, TReturn>(context);
+            }
+            finally
+            {
+                await UnlockAsync(lockingKey);
+            }
+        }
+    }
+
+    public class LockAttribute : DecorateAttribute
+    {
+        public LockAttribute(string name = null) : base(typeof(Lock), name)
+        { }
+    }
 ```
