@@ -14,7 +14,7 @@ namespace Qualia.Decorators.Utils
             byte[] hashBytes = sha1.ComputeHash(serializedArgs);
             char[] hex = ByteToHexBitFiddle(hashBytes);
 
-            return string.Concat(targetMethod.Name, "_", hex);
+            return string.Concat(targetMethod.Name, "_", new string(hex));
         }
 
         private static char[] ByteToHexBitFiddle(byte[] bytes)
