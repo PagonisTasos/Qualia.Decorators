@@ -13,7 +13,7 @@
 	  <PackageProjectUrl>https://github.com/PagonisTasos/Qualia.Decorators</PackageProjectUrl>
 	  <PackageTags>c# extensions, decorators, method interception</PackageTags>
 	  <RootNamespace>Qualia.Decorators</RootNamespace>
-	  <Version>0.2.4</Version>
+	  <Version>0.2.5</Version>
 	  <Authors>Pagonis Tasos</Authors>
 	  <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
