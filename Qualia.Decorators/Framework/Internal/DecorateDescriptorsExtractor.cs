@@ -24,9 +24,10 @@ namespace Qualia.Decorators.Framework
 
             private static List<DecorateDescriptor> GetAllClassDecorateDescriptors(ServiceDescriptor descriptor)
             {
-                if (descriptor.ImplementationType == null) return Enumerable.Empty<DecorateDescriptor>().ToList();
+                var targetType = descriptor.ImplementationType ?? descriptor.ImplementationFactory.Method.ReturnType;
+                if (targetType == null) return Enumerable.Empty<DecorateDescriptor>().ToList();
 
-                var classDecoratorBehaviors = descriptor.ImplementationType.GetCustomAttributes<DecorateAttribute>()
+                var classDecoratorBehaviors = targetType.GetCustomAttributes<DecorateAttribute>()
                                                 .Select(d => new DecorateDescriptor { MethodName = null, DecorateAttribute = d }).ToList();
 
                 return classDecoratorBehaviors;
@@ -34,9 +35,10 @@ namespace Qualia.Decorators.Framework
 
             private static List<DecorateDescriptor> GetAllMethodDecorateDescriptors(ServiceDescriptor descriptor)
             {
-                if (descriptor.ImplementationType == null) return Enumerable.Empty<DecorateDescriptor>().ToList();
+                var targetType = descriptor.ImplementationType ?? descriptor.ImplementationFactory.Method.ReturnType;
+                if (targetType == null) return Enumerable.Empty<DecorateDescriptor>().ToList();
 
-                var methodDecoratorBehaviors = descriptor.ImplementationType.GetMethods().SelectMany(m =>
+                var methodDecoratorBehaviors = targetType.GetMethods().SelectMany(m =>
                                     m.GetCustomAttributes<DecorateAttribute>()
                                     .Select(d => new DecorateDescriptor { MethodName = m.Name, DecorateAttribute = d })).ToList();
 
