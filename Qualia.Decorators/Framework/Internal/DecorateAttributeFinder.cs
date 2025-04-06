@@ -7,7 +7,10 @@ namespace Qualia.Decorators.Framework
     internal static class DecorateAttributeFinder
     {
         public static bool HasDecorateAttribute(ServiceDescriptor descriptor)
-            => HasDecorateAttribute(descriptor.ImplementationType ?? descriptor.ImplementationFactory?.Method?.ReturnType ?? descriptor.ServiceType);
+        {
+            var desc_type = descriptor.GetImplementationType();
+            return HasDecorateAttribute(desc_type);
+        }
 
         private static bool HasDecorateAttribute(Type type)
             => HasClassDecorateAttribute(type) || HasMethodDecorateAttribute(type);
