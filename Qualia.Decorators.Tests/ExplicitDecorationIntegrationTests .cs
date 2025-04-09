@@ -16,7 +16,6 @@ namespace Qualia.Decorators.Tests
 
             var loggerMock = new Mock<ILogger<Memoize>>();
             services.AddScoped(_ => loggerMock.Object);
-            services.AddTransient<Memoize>();
             services.AddDecoratedSingleton<IFoo, Foo>();
             services.AddDecoratedSingleton<IFoo2, Foo2>();
 
@@ -43,7 +42,6 @@ namespace Qualia.Decorators.Tests
 
             var loggerMock = new Mock<ILogger<Memoize>>();
             services.AddScoped(_ => loggerMock.Object);
-            services.AddTransient<Memoize>();
             var foo2 = new Foo2();
             services.AddDecoratedSingleton<IFoo, Foo>(_ => new Foo(foo2));
             services.AddDecoratedSingleton<IFoo2, Foo2>(_ => foo2);
@@ -71,7 +69,6 @@ namespace Qualia.Decorators.Tests
 
             var loggerMock = new Mock<ILogger<Memoize>>();
             services.AddScoped(_ => loggerMock.Object);
-            services.AddTransient<Memoize>();
             var foo2 = new Foo2();
             services.AddDecoratedSingleton<IFoo>(_ => new Foo(foo2));
             services.AddDecoratedSingleton<IFoo2>(_ => foo2);
@@ -99,7 +96,6 @@ namespace Qualia.Decorators.Tests
 
             var loggerMock = new Mock<ILogger<Memoize>>();
             services.AddScoped(_ => loggerMock.Object);
-            services.AddTransient<Memoize>();
             var foo2 = new Foo2();
             services.AddDecoratedSingleton<IFoo>(new Foo(foo2));
             services.AddDecoratedSingleton<IFoo2>(foo2);

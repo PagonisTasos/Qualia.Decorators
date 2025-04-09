@@ -121,6 +121,8 @@ namespace Qualia.Decorators.Framework
         {
             _implicitDecoration = implicitDecoration;
 
+            GetAllDecoratorBehaviors().ForEach(decor => services.AddTransient(decor));
+
             var descriptorsWithDecorateAttribute =
                 _implicitDecoration
                 ? services.Where(service => service.ServiceType.IsInterface).ToList()
@@ -133,6 +135,28 @@ namespace Qualia.Decorators.Framework
             }
 
             return services;
+        }
+
+        public static List<Type> GetAllDecoratorBehaviors()
+        {
+            var interfaceType = typeof(IDecoratorBehavior);
+
+            return AppDomain.CurrentDomain
+                .GetAssemblies()
+                .Where(a => !a.IsDynamic) // skip dynamic assemblies like generated proxies
+                .SelectMany(a =>
+                {
+                    try
+                    {
+                        return a.GetTypes();
+                    }
+                    catch (ReflectionTypeLoadException ex)
+                    {
+                        return ex.Types.Where(t => t != null);
+                    }
+                })
+                .Where(t => interfaceType.IsAssignableFrom(t) && !t.IsInterface && !t.IsAbstract)
+                .ToList();
         }
 
         private static IServiceCollection Decorate(this IServiceCollection services, ServiceDescriptor descriptor)
