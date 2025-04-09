@@ -34,7 +34,7 @@ namespace Qualia.Decorators.Tests
             services.AddSingleton(_memoryCache);
             services.AddSingleton(_loggerMock.Object);
             services.AddScoped<IFoo, Foo>(_ => _fooMock.Object);
-            services.UseDecorators();
+            services.UseDecorators(true);
 
             _serviceProvider = services.BuildServiceProvider();
         }
