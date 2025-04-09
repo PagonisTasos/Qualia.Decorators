@@ -8,9 +8,124 @@ namespace Qualia.Decorators.Framework
 {
     public static partial class ServiceCollectionExtensions
     {
-        public static IServiceCollection UseDecorators(this IServiceCollection services)
+        private static bool _implicitDecoration;
+        private static readonly List<ServiceDescriptor> _decoratedDescriptors = new List<ServiceDescriptor>();
+
+        public static IServiceCollection AddDecoratedSingleton<TService, TImplementation>(this IServiceCollection services)
+            where TService : class
+            where TImplementation : class, TService
         {
-            var descriptorsWithDecorateAttribute = services.Where(DecorateAttributeFinder.HasDecorateAttribute).ToList();
+            //services.AddSingleton<TService, TImplementation>();
+            var descriptor = new ServiceDescriptor(typeof(TService), typeof(TImplementation), ServiceLifetime.Singleton);
+            _decoratedDescriptors.Add(descriptor);
+            services.Add(descriptor);
+            return services;
+        }
+
+        public static IServiceCollection AddDecoratedSingleton<TService, TImplementation>(this IServiceCollection services, Func<IServiceProvider, TImplementation> implementationFactory)
+            where TService : class
+            where TImplementation : class, TService
+        {
+            //services.AddSingleton<TService, TImplementation>(_ => new TImplementation());
+            var descriptor = new ServiceDescriptor(typeof(TService), implementationFactory, ServiceLifetime.Singleton);
+            _decoratedDescriptors.Add(descriptor);
+            services.Add(descriptor);
+            return services;
+        }
+
+        public static IServiceCollection AddDecoratedSingleton<TService>(this IServiceCollection services, Func<IServiceProvider, TService> implementationFactory)
+            where TService : class
+        {
+            //services.AddSingleton<TService>(_ => new TService());
+            var descriptor = new ServiceDescriptor(typeof(TService), implementationFactory, ServiceLifetime.Singleton);
+            _decoratedDescriptors.Add(descriptor);
+            services.Add(descriptor);
+            return services;
+        }
+
+        public static IServiceCollection AddDecoratedSingleton<TService>(this IServiceCollection services, TService implementationInstance)
+            where TService : class
+        {
+            //services.AddSingleton<TService>(new TService());
+            var descriptor = new ServiceDescriptor(typeof(TService), implementationInstance);
+            _decoratedDescriptors.Add(descriptor);
+            services.Add(descriptor);
+            return services;
+        }
+
+        public static IServiceCollection AddDecoratedScoped<TService, TImplementation>(this IServiceCollection services)
+            where TService : class
+            where TImplementation : class, TService
+        {
+            //services.AddScoped<TService, TImplementation>();
+            var descriptor = new ServiceDescriptor(typeof(TService), typeof(TImplementation), ServiceLifetime.Scoped);
+            _decoratedDescriptors.Add(descriptor);
+            services.Add(descriptor);
+            return services;
+        }
+
+        public static IServiceCollection AddDecoratedScoped<TService, TImplementation>(this IServiceCollection services, Func<IServiceProvider, TImplementation> implementationFactory)
+            where TService : class
+            where TImplementation : class, TService
+        {
+            //services.AddScoped<TService, TImplementation>(_ => new TImplementation());
+            var descriptor = new ServiceDescriptor(typeof(TService), implementationFactory, ServiceLifetime.Scoped);
+            _decoratedDescriptors.Add(descriptor);
+            services.Add(descriptor);
+            return services;
+        }
+
+        public static IServiceCollection AddDecoratedScoped<TService>(this IServiceCollection services, Func<IServiceProvider, TService> implementationFactory)
+            where TService : class
+        {
+            //services.AddScoped<TService, TImplementation>(_ => new TService());
+            var descriptor = new ServiceDescriptor(typeof(TService), implementationFactory, ServiceLifetime.Scoped);
+            _decoratedDescriptors.Add(descriptor);
+            services.Add(descriptor);
+            return services;
+        }
+
+        public static IServiceCollection AddDecoratedTransient<TService, TImplementation>(this IServiceCollection services)
+            where TService : class
+            where TImplementation : class, TService
+        {
+            //services.AddTransient<TService, TImplementation>();
+            var descriptor = new ServiceDescriptor(typeof(TService), typeof(TImplementation), ServiceLifetime.Transient);
+            _decoratedDescriptors.Add(descriptor);
+            services.Add(descriptor);
+            return services;
+        }
+
+        public static IServiceCollection AddDecoratedTransient<TService, TImplementation>(this IServiceCollection services, Func<IServiceProvider, TImplementation> implementationFactory)
+            where TService : class
+            where TImplementation : class, TService
+        {
+            //services.AddTransient<TService, TImplementation>(_ => new TImplementation());
+            var descriptor = new ServiceDescriptor(typeof(TService), implementationFactory, ServiceLifetime.Transient);
+            _decoratedDescriptors.Add(descriptor);
+            services.Add(descriptor);
+            return services;
+        }
+
+        public static IServiceCollection AddDecoratedTransient<TService>(this IServiceCollection services, Func<IServiceProvider, TService> implementationFactory)
+            where TService : class
+        {
+            //services.AddTransient<TService>(_ => new TService());
+            var descriptor = new ServiceDescriptor(typeof(TService), implementationFactory, ServiceLifetime.Transient);
+            _decoratedDescriptors.Add(descriptor);
+            services.Add(descriptor);
+            return services;
+        }
+
+        public static IServiceCollection UseDecorators(this IServiceCollection services, bool implicitDecoration = false)
+        {
+            _implicitDecoration = implicitDecoration;
+
+            var descriptorsWithDecorateAttribute =
+                _implicitDecoration
+                ? services.Where(service => service.ServiceType.IsInterface).ToList()
+                : _decoratedDescriptors
+                ;
 
             foreach (var descriptor in descriptorsWithDecorateAttribute)
             {
@@ -45,13 +160,7 @@ namespace Qualia.Decorators.Framework
             where TInterface : class
             where TProxy : DispatchProxy
         {
-            var decorateDescriptors = DecorateDescriptorsExtractor.GetDecorateDescriptors(serviceDescriptor);
-
-            if (decorateDescriptors.Count == 0) return services;
-
-            RegisterTransientServicesDeclaredInDecorateDescriptors(services, decorateDescriptors);
-
-            ServiceDescriptor descorated = DecorateTheServiceDescriptor<TInterface>(serviceDescriptor, decorateDescriptors);
+            ServiceDescriptor descorated = DecorateTheServiceDescriptor<TInterface>(serviceDescriptor);
 
             services.Remove(serviceDescriptor);
             services.Add(descorated);
@@ -74,7 +183,7 @@ namespace Qualia.Decorators.Framework
         }
 
         private static ServiceDescriptor DecorateTheServiceDescriptor<TInterface>(
-            ServiceDescriptor serviceDescriptor, List<DecorateDescriptor> decorateDescriptors)
+            ServiceDescriptor serviceDescriptor)
             where TInterface : class
         {
             ServiceDescriptor decorated = ServiceDescriptor.Describe(
@@ -83,6 +192,12 @@ namespace Qualia.Decorators.Framework
             {
                 //init with actual implementation type
                 TInterface decoratedInstance = sp.CreateServiceInstance(serviceDescriptor).EnsureCast<TInterface>();
+
+                var serviceConcreteType = decoratedInstance.GetType();
+                bool needsDecoration = DecorateAttributeFinder.HasDecorateAttribute(serviceConcreteType);
+                if (!needsDecoration) return decoratedInstance;
+
+                List<DecorateDescriptor> decorateDescriptors = DecorateDescriptorsExtractor.GetDecorateDescriptors(serviceConcreteType);
 
                 foreach (var namedDecoratorBehavior in decorateDescriptors)
                 {

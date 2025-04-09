@@ -12,7 +12,7 @@ namespace Qualia.Decorators.Framework
             return HasDecorateAttribute(desc_type);
         }
 
-        private static bool HasDecorateAttribute(Type type)
+        public static bool HasDecorateAttribute(Type type)
             => HasClassDecorateAttribute(type) || HasMethodDecorateAttribute(type);
 
         private static bool HasClassDecorateAttribute(Type type)

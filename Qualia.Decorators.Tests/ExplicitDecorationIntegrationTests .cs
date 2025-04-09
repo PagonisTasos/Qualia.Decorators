@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 namespace Qualia.Decorators.Tests
 {
     [TestFixture]
-    public class MemoizeIntegrationTests
+    public class ExplicitDecorationIntegrationTests
     {
         [Test]
         public void ConcreteImplementationType_Should_Be_Memoized()
@@ -17,11 +17,11 @@ namespace Qualia.Decorators.Tests
             var loggerMock = new Mock<ILogger<Memoize>>();
             services.AddScoped(_ => loggerMock.Object);
             services.AddTransient<Memoize>();
-            services.AddSingleton<IFoo, Foo>();
-            services.AddSingleton<IFoo2, Foo2>();
+            services.AddDecoratedSingleton<IFoo, Foo>();
+            services.AddDecoratedSingleton<IFoo2, Foo2>();
 
             // Apply the decorators
-            services.UseDecorators();
+            services.UseDecorators(false);
 
             // Build the service provider
             var _serviceProvider = services.BuildServiceProvider();
@@ -45,11 +45,11 @@ namespace Qualia.Decorators.Tests
             services.AddScoped(_ => loggerMock.Object);
             services.AddTransient<Memoize>();
             var foo2 = new Foo2();
-            services.AddSingleton<IFoo, Foo>(_ => new Foo(foo2));
-            services.AddSingleton<IFoo2, Foo2>(_ => foo2);
+            services.AddDecoratedSingleton<IFoo, Foo>(_ => new Foo(foo2));
+            services.AddDecoratedSingleton<IFoo2, Foo2>(_ => foo2);
 
             // Apply the decorators
-            services.UseDecorators();
+            services.UseDecorators(false);
 
             // Build the service provider
             var _serviceProvider = services.BuildServiceProvider();
@@ -73,11 +73,11 @@ namespace Qualia.Decorators.Tests
             services.AddScoped(_ => loggerMock.Object);
             services.AddTransient<Memoize>();
             var foo2 = new Foo2();
-            services.AddSingleton<IFoo>(_ => new Foo(foo2));
-            services.AddSingleton<IFoo2>(_ => foo2);
+            services.AddDecoratedSingleton<IFoo>(_ => new Foo(foo2));
+            services.AddDecoratedSingleton<IFoo2>(_ => foo2);
 
             // Apply the decorators
-            services.UseDecorators();
+            services.UseDecorators(false);
 
             // Build the service provider
             var _serviceProvider = services.BuildServiceProvider();
@@ -101,11 +101,11 @@ namespace Qualia.Decorators.Tests
             services.AddScoped(_ => loggerMock.Object);
             services.AddTransient<Memoize>();
             var foo2 = new Foo2();
-            services.AddSingleton<IFoo>(new Foo(foo2));
-            services.AddSingleton<IFoo2>(foo2);
+            services.AddDecoratedSingleton<IFoo>(new Foo(foo2));
+            services.AddDecoratedSingleton<IFoo2>(foo2);
 
             // Apply the decorators
-            services.UseDecorators();
+            services.UseDecorators(false);
 
             // Build the service provider
             var _serviceProvider = services.BuildServiceProvider();
