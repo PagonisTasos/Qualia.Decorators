@@ -8,12 +8,18 @@ namespace Qualia.Decorators
     {
         public TimeSpan? TimeSpan { get; set; }
         public ExpirationType Expiration { get; set; }
+        public string[] VaryBy { get; set; }
 
-        public MemCacheAttribute(string name = null, string timespan = "1m", ExpirationType expiration = ExpirationType.Absolute) 
+        public MemCacheAttribute(
+            string name = null, 
+            string timespan = "1m", 
+            ExpirationType expiration = ExpirationType.Absolute,
+            string[] varyBy = null) 
             : base(typeof(MemCache), name) 
         {
             TimeSpan = StringToTimeSpan.Parse(timespan);
             Expiration = expiration;
+            VaryBy = varyBy;
         }
 
         public enum ExpirationType { Absolute, Sliding }

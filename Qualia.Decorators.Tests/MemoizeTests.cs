@@ -58,8 +58,45 @@ namespace Qualia.Decorators.Tests
             // Arrange
             var methodInfo = typeof(SampleClass).GetMethod(nameof(SampleClass.SampleMethod));
 
-            var context1 = new DecoratorContext<SampleClass>(null, new SampleClass(), methodInfo, new object[] { 1, 2 });
-            var context2 = new DecoratorContext<SampleClass>(null, new SampleClass(), methodInfo, new object[] { 2, 3 });
+            var att = new MemoizeAttribute(varyBy: new string[] { "a" });
+            var context1 = new DecoratorContext<SampleClass>(att, new SampleClass(), methodInfo, new object[] { 1, 2 });
+            var context2 = new DecoratorContext<SampleClass>(att, new SampleClass(), methodInfo, new object[] { 2, 3 });
+
+            // Act
+            var result1 = _memoize.Invoke(context1);
+            var result2 = _memoize.Invoke(context2);
+
+            // Assert
+            Assert.That(result2, Is.Not.EqualTo(result1));
+        }
+
+        [Test]
+        public void Invoke_CachesWithSameValueOnVariedByArgument()
+        {
+            // Arrange
+            var methodInfo = typeof(SampleClass).GetMethod(nameof(SampleClass.SampleMethod));
+
+            var att = new MemoizeAttribute(varyBy: new string[] { "a" });
+            var context1 = new DecoratorContext<SampleClass>(att, new SampleClass(), methodInfo, new object[] { 1, 2 });
+            var context2 = new DecoratorContext<SampleClass>(att, new SampleClass(), methodInfo, new object[] { 1, 3 });
+
+            // Act
+            var result1 = _memoize.Invoke(context1);
+            var result2 = _memoize.Invoke(context2);
+
+            // Assert
+            Assert.That(result2, Is.EqualTo(result1));
+        }
+
+        [Test]
+        public void Invoke_CachesWithSameValueOnNotVariedByArgument()
+        {
+            // Arrange
+            var methodInfo = typeof(SampleClass).GetMethod(nameof(SampleClass.SampleMethod));
+
+            var att = new MemoizeAttribute(varyBy: new string[] { "a" });
+            var context1 = new DecoratorContext<SampleClass>(att, new SampleClass(), methodInfo, new object[] { 1, 2 });
+            var context2 = new DecoratorContext<SampleClass>(att, new SampleClass(), methodInfo, new object[] { 8, 2 });
 
             // Act
             var result1 = _memoize.Invoke(context1);
