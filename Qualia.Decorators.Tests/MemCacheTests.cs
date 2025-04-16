@@ -12,6 +12,7 @@ namespace Qualia.Decorators.Tests
         private Mock<ILogger<MemCache>> _loggerMock;
         private IMemoryCache _memoryCache;
         private Mock<Foo> _fooMock;
+        private Mock<FooWithCancelationToken> _fooWTokenMock;
         private IServiceProvider _serviceProvider;
 
         [SetUp]
@@ -25,6 +26,7 @@ namespace Qualia.Decorators.Tests
 
             // Mock IFoo
             _fooMock = new Mock<Foo>();
+            _fooWTokenMock = new Mock<FooWithCancelationToken>();
 
             // Set up the Bar method to count invocations
             _fooMock.Setup(f => f.Bar()).Verifiable();
@@ -34,6 +36,7 @@ namespace Qualia.Decorators.Tests
             services.AddSingleton(_memoryCache);
             services.AddSingleton(_loggerMock.Object);
             services.AddScoped<IFoo, Foo>(_ => _fooMock.Object);
+            services.AddScoped<IFooWithCancelationToken, FooWithCancelationToken>(_ => _fooWTokenMock.Object);
             services.UseDecorators(true);
 
             _serviceProvider = services.BuildServiceProvider();
@@ -98,6 +101,20 @@ namespace Qualia.Decorators.Tests
             Assert.Throws<InvalidOperationException>(() => memCache.Invoke(context), "Invalid expiration type should throw an exception.");
         }
 
+        [Test]
+        public void BarWithNonSerializableArgument_Should_Be_Cached()
+        {
+            // Arrange
+            var foo = _serviceProvider.GetRequiredService<IFooWithCancelationToken>();
+
+            // Act
+            foo.Bar(CancellationToken.None); // First call, should cache the result
+            foo.Bar(CancellationToken.None); // Second call, should retrieve from cache
+
+            // Assert
+            _fooWTokenMock.Verify(f => f.Bar(CancellationToken.None), Times.Once, "Bar method should only be called once due to caching.");
+        }
+
         [TearDown]
         public void TearDown()
         {
@@ -118,6 +135,20 @@ namespace Qualia.Decorators.Tests
         public class Foo : IFoo
         {
             public virtual void Bar()
+            {
+                // Your method implementation
+            }
+        }
+
+        public interface IFooWithCancelationToken
+        {
+            void Bar(CancellationToken cancelationToken);
+        }
+
+        [MemCache]
+        public class FooWithCancelationToken : IFooWithCancelationToken
+        {
+            public virtual void Bar(CancellationToken cancelationToken)
             {
                 // Your method implementation
             }

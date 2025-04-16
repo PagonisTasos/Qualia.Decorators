@@ -2,6 +2,13 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Security.Cryptography;
+using System.Collections.Generic;
+using System.Data.Common;
+using System.IO;
+using System.Threading.Tasks;
+using System.Threading;
+using System;
+using System.Linq;
 
 namespace Qualia.Decorators.Utils
 {
@@ -9,7 +16,7 @@ namespace Qualia.Decorators.Utils
     {
         public static string CreateKey(MethodInfo targetMethod, object[] args)
         {
-            byte[] serializedArgs = JsonSerializer.SerializeToUtf8Bytes(args, options);
+            byte[] serializedArgs = JsonSerializer.SerializeToUtf8Bytes(args.Where(a => !IsKnownNonSerializable(a)), options);
             SHA1 sha1 = SHA1.Create();
             byte[] hashBytes = sha1.ComputeHash(serializedArgs);
             char[] hex = ByteToHexBitFiddle(hashBytes);
@@ -35,5 +42,23 @@ namespace Qualia.Decorators.Utils
         {
             ReferenceHandler = ReferenceHandler.IgnoreCycles
         };
+
+        static readonly HashSet<Type> NonSerializableTypes = new HashSet<Type>()
+        {
+            typeof(Stream),
+            typeof(Task),
+            typeof(CancellationToken),
+            typeof(IntPtr),
+            typeof(UIntPtr),
+            typeof(DbConnection),
+            typeof(Delegate)
+        };
+
+        static bool IsKnownNonSerializable(object obj)
+        {
+            if (obj == null) return true;
+            var type = obj.GetType();
+            return NonSerializableTypes.Any(t => t.IsAssignableFrom(type));
+        }
     }
 }
