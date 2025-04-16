@@ -27,8 +27,10 @@ namespace Qualia.Decorators.Framework
             //else (this is a class decor || it is a method decor and we are calling that method)
 
             //if is a class decor, check the ignores
-            var ignoresOnMethod = typeof(TDecorated).GetMethod(targetMethod.Name)?.GetCustomAttributes<DecorateIgnoreAttribute>() 
+            var ignoresOnMethod = GetMethod(_decorated, targetMethod)
+                                    ?.GetCustomAttributes<DecorateIgnoreAttribute>() 
                                     ?? Enumerable.Empty<DecorateIgnoreAttribute>();
+
             if (string.IsNullOrEmpty(_methodName))//is class decor
             {
                 bool isNamedDecor = !string.IsNullOrEmpty(_decoratorName);
@@ -77,6 +79,36 @@ namespace Qualia.Decorators.Framework
             _decoratorBehavior = decoratorBehavior ?? throw new ArgumentNullException(nameof(decoratorBehavior));
             _decoratorName = decoratorName;
             _methodName = methodName;
+        }
+
+        private MethodInfo GetMethod(TDecorated decorated, MethodInfo method)
+        {
+            return decorated.GetType()
+                .GetMethods(BindingFlags.Instance | BindingFlags.Public)
+                .FirstOrDefault(candidate =>
+                    candidate.Name == method.Name &&
+                    candidate.IsGenericMethod == method.IsGenericMethod &&
+                    MatchGenericArguments(candidate, method) &&
+                    ParametersMatch(candidate.GetParameters(), method.GetParameters())
+                );
+        }
+        private bool MatchGenericArguments(MethodInfo x, MethodInfo y)
+        {
+            if (!x.IsGenericMethod) return true;
+            var aArgs = x.GetGenericArguments();
+            var bArgs = y.GetGenericArguments();
+            return aArgs.Length == bArgs.Length;
+        }
+
+        private bool ParametersMatch(ParameterInfo[] aParams, ParameterInfo[] bParams)
+        {
+            if (aParams.Length != bParams.Length) return false;
+            for (int i = 0; i < aParams.Length; i++)
+            {
+                if (aParams[i].ParameterType != bParams[i].ParameterType)
+                    return false;
+            }
+            return true;
         }
     }
 }

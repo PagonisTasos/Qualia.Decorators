@@ -115,9 +115,37 @@ namespace Qualia.Decorators.Tests
             Assert.That(foo.Counter, Is.EqualTo(1));
         }
 
+        [Test]
+        public void MethodOverloadWorks()
+        {
+            // Arrange
+            IServiceCollection services = new ServiceCollection();
+
+            var loggerMock = new Mock<ILogger<Memoize>>();
+            services.AddScoped(_ => loggerMock.Object);
+            var foo2 = new Foo2();
+            services.AddSingleton<IFoo>(new Foo(foo2));
+            services.AddSingleton<IFoo2>(foo2);
+
+            // Apply the decorators
+            services.UseDecorators(true);
+
+            // Build the service provider
+            var _serviceProvider = services.BuildServiceProvider();
+            var foo = _serviceProvider.GetRequiredService<IFoo>();
+
+            // Act
+            foo.Bar(""); // First call
+            foo.Bar(""); // Second call - should hit the cache
+
+            // Assert
+            Assert.That(foo.Counter, Is.EqualTo(1));
+        }
+
         public interface IFoo
         {
             void Bar();
+            void Bar(string abc);
             int Counter { get; }
         }
 
@@ -129,6 +157,10 @@ namespace Qualia.Decorators.Tests
                     
             }
             public virtual void Bar()
+            { 
+                Counter++;
+            }
+            public virtual void Bar(string bar)
             { 
                 Counter++;
             }
